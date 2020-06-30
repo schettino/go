@@ -7,7 +7,8 @@ services:
       - POSTGRES_PASSWORD=mysecretpassword
       - POSTGRES_DB=stellar
     ports:
-      - "5641:5432"
+      - "5641:5641"
+    command: -p 5641
     volumes:
       - "core-db-data:/var/lib/postgresql/data"
     network_mode: '${NETWORK_MODE:-bridge}'
@@ -23,6 +24,9 @@ services:
       - "11625:11625"
       - "11626:11626"
     command: /start
+    environment:
+      - SKIP_START=true
+      - NOPSQL=true
     volumes:
       - ./stellar-core-testnet.cfg:/stellar-core.cfg
       - ./core-start.sh:/start
@@ -41,9 +45,9 @@ services:
     network_mode: '${NETWORK_MODE:-bridge}'
 
   horizon:
-    depends_on:
-      - horizon-postgres
-      - core
+    # depends_on:
+      # - horizon-postgres
+      # - core
     build:
       # set build context to the root directory of the go monorepo
       context: ../../../
@@ -52,15 +56,20 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgres://postgres@host.docker.internal:5432/horizon?sslmode=disable
+      - DATABASE_URL=postgres://postgres:yL15LwgWSkGm@horizon-captive-core-experiment-fons.cmsk9uo5u6im.us-east-1.rds.amazonaws.com:5432/horizon
+      # - DATABASE_URL=postgres://postgres:yL15LwgWSkGm@horizon-captive-core-experiment-fons.cmsk9uo5u6im.us-east-1.rds.amazonaws.com:5432/horizon_parallel
+      # - DATABASE_URL=postgres://postgres@host.docker.internal:5432/horizon?sslmode=disable
       - STELLAR_CORE_DATABASE_URL=postgres://postgres:mysecretpassword@host.docker.internal:5641/stellar?sslmode=disable
-      - HISTORY_ARCHIVE_URLS=https://history.stellar.org/prd/core-testnet/core_testnet_001
+      - HISTORY_ARCHIVE_URLS=https://s3-eu-west-1.amazonaws.com/history.stellar.org/prd/core-testnet/core_testnet_001
       - NETWORK_PASSPHRASE=Test SDF Network ; September 2015
       - STELLAR_CORE_URL=http://host.docker.internal:11626
+      - STELLAR_CORE_BINARY_PATH=/usr/local/bin/stellar-core
+      - ENABLE_CAPTIVE_CORE_INGESTION=true
       - INGEST=true
       - PER_HOUR_RATE_LIMIT=0
     network_mode: '${NETWORK_MODE:-bridge}'
-    command: ["--apply-migrations"]
+    # command: ["--apply-migrations", "db", "reingest", "range", "--retry-backoff-seconds=20", "--retries=10", "--parallel-workers=3", "--parallel-job-size=1000", "29954111", "29964159"]
+    command: ["--apply-migrations", "db", "reingest", "range", "--retry-backoff-seconds=20", "--retries=10", "29954111", "29964159"]
 
 volumes:
   core-db-data:
