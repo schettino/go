@@ -977,7 +977,8 @@ func (s *CreateClaimableBalanceOpTestSuite) SetupTest() {
 						{
 							Type: xdr.ClaimantTypeClaimantTypeV0,
 							V0: &xdr.ClaimantV0{
-								Destination: xdr.MustAddress("GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD"),
+								Destination: xdr.MustAddress("GD5OVB6FKDV7P7SOJ5UB2BPLBL4XGSHPYHINR5355SY3RSXLT2BZWAKY"),
+
 								Predicate: xdr.ClaimPredicate{
 									Type: xdr.ClaimPredicateTypeClaimPredicateUnconditional,
 								},
@@ -998,7 +999,7 @@ func (s *CreateClaimableBalanceOpTestSuite) SetupTest() {
 						{
 							Type: xdr.ClaimantTypeClaimantTypeV0,
 							V0: &xdr.ClaimantV0{
-								Destination: xdr.MustAddress("GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD"),
+								Destination: xdr.MustAddress("GDMQUXK7ZUCWM5472ZU3YLDP4BMJLQQ76DEMNYDEY2ODEEGGRKLEWGW2"),
 								Predicate: xdr.ClaimPredicate{
 									Type: xdr.ClaimPredicateTypeClaimPredicateUnconditional,
 								},
@@ -1007,7 +1008,7 @@ func (s *CreateClaimableBalanceOpTestSuite) SetupTest() {
 						{
 							Type: xdr.ClaimantTypeClaimantTypeV0,
 							V0: &xdr.ClaimantV0{
-								Destination: xdr.MustAddress("GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD"),
+								Destination: xdr.MustAddress("GDQNY3PBOJOKYZSRMK2S7LHHGWZIUISD4QORETLMXEWXBI7KFZZMKTL3"),
 								Predicate: xdr.ClaimPredicate{
 									Type: xdr.ClaimPredicateTypeClaimPredicateUnconditional,
 								},
@@ -1019,7 +1020,7 @@ func (s *CreateClaimableBalanceOpTestSuite) SetupTest() {
 		},
 	}
 }
-func (s *CreateClaimableBalanceOpTestSuite) TestOperationDetails() {
+func (s *CreateClaimableBalanceOpTestSuite) TestDetails() {
 	testCases := []struct {
 		desc     string
 		op       xdr.Operation
@@ -1033,7 +1034,7 @@ func (s *CreateClaimableBalanceOpTestSuite) TestOperationDetails() {
 				"amount": "10.0000000",
 				"claimants": history.Claimants{
 					history.Claimant{
-						Destination: "GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD",
+						Destination: "GD5OVB6FKDV7P7SOJ5UB2BPLBL4XGSHPYHINR5355SY3RSXLT2BZWAKY",
 						Predicate: xdr.ClaimPredicate{
 							Type: xdr.ClaimPredicateTypeClaimPredicateUnconditional,
 						},
@@ -1049,13 +1050,13 @@ func (s *CreateClaimableBalanceOpTestSuite) TestOperationDetails() {
 				"amount": "20.0000000",
 				"claimants": history.Claimants{
 					history.Claimant{
-						Destination: "GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD",
+						Destination: "GDMQUXK7ZUCWM5472ZU3YLDP4BMJLQQ76DEMNYDEY2ODEEGGRKLEWGW2",
 						Predicate: xdr.ClaimPredicate{
 							Type: xdr.ClaimPredicateTypeClaimPredicateUnconditional,
 						},
 					},
 					history.Claimant{
-						Destination: "GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD",
+						Destination: "GDQNY3PBOJOKYZSRMK2S7LHHGWZIUISD4QORETLMXEWXBI7KFZZMKTL3",
 						Predicate: xdr.ClaimPredicate{
 							Type: xdr.ClaimPredicateTypeClaimPredicateUnconditional,
 						},
@@ -1074,6 +1075,57 @@ func (s *CreateClaimableBalanceOpTestSuite) TestOperationDetails() {
 			}
 
 			s.Assert().Equal(tc.expected, operation.Details())
+		})
+	}
+}
+
+func (s *CreateClaimableBalanceOpTestSuite) TestParticipants() {
+	testCases := []struct {
+		desc     string
+		op       xdr.Operation
+		expected []xdr.AccountId
+	}{
+		{
+			desc: "claimable balance with a single claimant",
+			op:   s.ops[0],
+			expected: []xdr.AccountId{
+				xdr.MustAddress("GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD"),
+				xdr.MustAddress("GD5OVB6FKDV7P7SOJ5UB2BPLBL4XGSHPYHINR5355SY3RSXLT2BZWAKY"),
+			},
+		},
+		{
+			desc: "claimable balance with a multiple claimants",
+			op:   s.ops[1],
+			expected: []xdr.AccountId{
+				xdr.MustAddress("GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD"),
+				xdr.MustAddress("GDMQUXK7ZUCWM5472ZU3YLDP4BMJLQQ76DEMNYDEY2ODEEGGRKLEWGW2"),
+				xdr.MustAddress("GDQNY3PBOJOKYZSRMK2S7LHHGWZIUISD4QORETLMXEWXBI7KFZZMKTL3"),
+			},
+		},
+	}
+	for _, tc := range testCases {
+		s.T().Run(tc.desc, func(t *testing.T) {
+			operation := transactionOperationWrapper{
+				index:          0,
+				transaction:    io.LedgerTransaction{},
+				operation:      tc.op,
+				ledgerSequence: 1,
+			}
+
+			participants, err := operation.Participants()
+			s.Assert().Greater(len(participants), 1)
+			s.Assert().NoError(err)
+
+			result := map[string]xdr.AccountId{}
+
+			for _, account := range participants {
+				result[account.Address()] = account
+			}
+			for _, account := range tc.expected {
+				delete(result, account.Address())
+			}
+
+			s.Assert().Empty(result)
 		})
 	}
 }

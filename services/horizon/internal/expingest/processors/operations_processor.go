@@ -393,8 +393,11 @@ func (operation *transactionOperationWrapper) Participants() ([]xdr.AccountId, e
 		// the only direct participant is the source_account
 	case xdr.OperationTypeBumpSequence:
 		// the only direct participant is the source_account
-	case xdr.OperationTypeCreateClaimableBalance,
-		xdr.OperationTypeClaimClaimableBalance,
+	case xdr.OperationTypeCreateClaimableBalance:
+		for _, c := range op.Body.MustCreateClaimableBalanceOp().Claimants {
+			participants = append(participants, c.MustV0().Destination)
+		}
+	case xdr.OperationTypeClaimClaimableBalance,
 		xdr.OperationTypeBeginSponsoringFutureReserves,
 		xdr.OperationTypeEndSponsoringFutureReserves,
 		xdr.OperationTypeRevokeSponsorship:
