@@ -104,6 +104,39 @@ var _ = Describe("xdr.Asset#String()", func() {
 	})
 })
 
+var _ = Describe("xdr.Asset#StringCanonical()", func() {
+	var asset Asset
+
+	Context("asset is native", func() {
+		BeforeEach(func() {
+			var err error
+			asset, err = NewAsset(AssetTypeAssetTypeNative, nil)
+			Expect(err).To(BeNil())
+		})
+
+		It("returns 'native'", func() {
+			Expect(asset.StringCanonical()).To(Equal("native"))
+		})
+	})
+
+	Context("asset is credit_alphanum4", func() {
+		BeforeEach(func() {
+			var err error
+			an := AssetAlphaNum4{}
+			err = an.Issuer.SetAddress("GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H")
+			Expect(err).To(BeNil())
+			copy(an.AssetCode[:], []byte("USD"))
+
+			asset, err = NewAsset(AssetTypeAssetTypeCreditAlphanum4, an)
+			Expect(err).To(BeNil())
+		})
+
+		It("returns 'type/code/issuer'", func() {
+			Expect(asset.StringCanonical()).To(Equal("USD:GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H"))
+		})
+	})
+})
+
 var _ = Describe("xdr.Asset#Equals()", func() {
 	var (
 		issuer1       AccountId
