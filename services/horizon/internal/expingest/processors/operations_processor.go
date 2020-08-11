@@ -296,8 +296,15 @@ func (operation *transactionOperationWrapper) Details() map[string]interface{} {
 			})
 		}
 		details["claimants"] = claimants
-	case xdr.OperationTypeClaimClaimableBalance,
-		xdr.OperationTypeBeginSponsoringFutureReserves,
+	case xdr.OperationTypeClaimClaimableBalance:
+		op := operation.operation.Body.MustClaimClaimableBalanceOp()
+		balanceID, err := xdr.MarshalBase64(op.BalanceId)
+		if err != nil {
+			panic(fmt.Errorf("Invalid balanceId in op: %d", operation.index))
+		}
+		details["balance_id"] = balanceID
+		details["claimant"] = source.Address()
+	case xdr.OperationTypeBeginSponsoringFutureReserves,
 		xdr.OperationTypeEndSponsoringFutureReserves,
 		xdr.OperationTypeRevokeSponsorship:
 		// TBD
@@ -397,8 +404,9 @@ func (operation *transactionOperationWrapper) Participants() ([]xdr.AccountId, e
 		for _, c := range op.Body.MustCreateClaimableBalanceOp().Claimants {
 			participants = append(participants, c.MustV0().Destination)
 		}
-	case xdr.OperationTypeClaimClaimableBalance,
-		xdr.OperationTypeBeginSponsoringFutureReserves,
+	case xdr.OperationTypeClaimClaimableBalance:
+		// the only direct participant is the source_account
+	case xdr.OperationTypeBeginSponsoringFutureReserves,
 		xdr.OperationTypeEndSponsoringFutureReserves,
 		xdr.OperationTypeRevokeSponsorship:
 		// TBD

@@ -1129,7 +1129,63 @@ func (s *CreateClaimableBalanceOpTestSuite) TestParticipants() {
 		})
 	}
 }
-
 func TestCreateClaimableBalanceOpTestSuite(t *testing.T) {
 	suite.Run(t, new(CreateClaimableBalanceOpTestSuite))
+}
+
+type ClaimClaimableBalanceOpTestSuite struct {
+	suite.Suite
+	op        xdr.Operation
+	balanceID string
+}
+
+func (s *ClaimClaimableBalanceOpTestSuite) SetupTest() {
+	s.balanceID = "AAAAANoNV9p9SFDn/BDSqdDrxzH3r7QFdMAzlbF9SRSbkfW+"
+	aid := xdr.MustAddress("GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD")
+	source := aid.ToMuxedAccount()
+	var balanceID xdr.ClaimableBalanceId
+	xdr.SafeUnmarshalBase64(s.balanceID, &balanceID)
+	s.op = xdr.Operation{
+		SourceAccount: &source,
+		Body: xdr.OperationBody{
+			Type: xdr.OperationTypeClaimClaimableBalance,
+			ClaimClaimableBalanceOp: &xdr.ClaimClaimableBalanceOp{
+				BalanceId: balanceID,
+			},
+		},
+	}
+}
+func (s *ClaimClaimableBalanceOpTestSuite) TestDetails() {
+	expected := map[string]interface{}{
+		"claimant":   "GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD",
+		"balance_id": s.balanceID,
+	}
+
+	operation := transactionOperationWrapper{
+		index:          0,
+		transaction:    io.LedgerTransaction{},
+		operation:      s.op,
+		ledgerSequence: 1,
+	}
+
+	s.Assert().Equal(expected, operation.Details())
+}
+
+func (s *ClaimClaimableBalanceOpTestSuite) TestParticipants() {
+	operation := transactionOperationWrapper{
+		index:          0,
+		transaction:    io.LedgerTransaction{},
+		operation:      s.op,
+		ledgerSequence: 1,
+	}
+
+	participants, err := operation.Participants()
+	s.Assert().NoError(err)
+	s.Assert().Equal([]xdr.AccountId{
+		xdr.MustAddress("GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD"),
+	}, participants)
+}
+
+func TestClaimClaimableBalanceOpTestSuite(t *testing.T) {
+	suite.Run(t, new(ClaimClaimableBalanceOpTestSuite))
 }
