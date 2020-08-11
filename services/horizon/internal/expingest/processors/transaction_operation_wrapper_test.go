@@ -4,9 +4,11 @@ import (
 	"testing"
 
 	"github.com/stellar/go/exp/ingest/io"
+	"github.com/stellar/go/services/horizon/internal/db2/history"
 	. "github.com/stellar/go/services/horizon/internal/test/transactions"
 	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
 var (
@@ -953,4 +955,129 @@ func TestTransactionOperationAllowTrustDetails(t *testing.T) {
 			tt.Equal(tc.expected, operation.Details())
 		})
 	}
+}
+
+type CreateClaimableBalanceOpTestSuite struct {
+	suite.Suite
+	ops []xdr.Operation
+}
+
+func (s *CreateClaimableBalanceOpTestSuite) SetupTest() {
+	aid := xdr.MustAddress("GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD")
+	source := aid.ToMuxedAccount()
+	s.ops = []xdr.Operation{
+		{
+			SourceAccount: &source,
+			Body: xdr.OperationBody{
+				Type: xdr.OperationTypeCreateClaimableBalance,
+				CreateClaimableBalanceOp: &xdr.CreateClaimableBalanceOp{
+					Amount: xdr.Int64(100000000),
+					Asset:  xdr.MustNewNativeAsset(),
+					Claimants: []xdr.Claimant{
+						{
+							Type: xdr.ClaimantTypeClaimantTypeV0,
+							V0: &xdr.ClaimantV0{
+								Destination: xdr.MustAddress("GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD"),
+								Predicate: xdr.ClaimPredicate{
+									Type: xdr.ClaimPredicateTypeClaimPredicateUnconditional,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			SourceAccount: &source,
+			Body: xdr.OperationBody{
+				Type: xdr.OperationTypeCreateClaimableBalance,
+				CreateClaimableBalanceOp: &xdr.CreateClaimableBalanceOp{
+					Amount: xdr.Int64(200000000),
+					Asset:  xdr.MustNewCreditAsset("USD", "GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD"),
+					Claimants: []xdr.Claimant{
+						{
+							Type: xdr.ClaimantTypeClaimantTypeV0,
+							V0: &xdr.ClaimantV0{
+								Destination: xdr.MustAddress("GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD"),
+								Predicate: xdr.ClaimPredicate{
+									Type: xdr.ClaimPredicateTypeClaimPredicateUnconditional,
+								},
+							},
+						},
+						{
+							Type: xdr.ClaimantTypeClaimantTypeV0,
+							V0: &xdr.ClaimantV0{
+								Destination: xdr.MustAddress("GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD"),
+								Predicate: xdr.ClaimPredicate{
+									Type: xdr.ClaimPredicateTypeClaimPredicateUnconditional,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+func (s *CreateClaimableBalanceOpTestSuite) TestOperationDetails() {
+	testCases := []struct {
+		desc     string
+		op       xdr.Operation
+		expected map[string]interface{}
+	}{
+		{
+			desc: "claimable balance with native asset",
+			op:   s.ops[0],
+			expected: map[string]interface{}{
+				"asset":  "native",
+				"amount": "10.0000000",
+				"claimants": history.Claimants{
+					history.Claimant{
+						Destination: "GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD",
+						Predicate: xdr.ClaimPredicate{
+							Type: xdr.ClaimPredicateTypeClaimPredicateUnconditional,
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "claimable balance with issued asset",
+			op:   s.ops[1],
+			expected: map[string]interface{}{
+				"asset":  "USD:GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD",
+				"amount": "20.0000000",
+				"claimants": history.Claimants{
+					history.Claimant{
+						Destination: "GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD",
+						Predicate: xdr.ClaimPredicate{
+							Type: xdr.ClaimPredicateTypeClaimPredicateUnconditional,
+						},
+					},
+					history.Claimant{
+						Destination: "GDRW375MAYR46ODGF2WGANQC2RRZL7O246DYHHCGWTV2RE7IHE2QUQLD",
+						Predicate: xdr.ClaimPredicate{
+							Type: xdr.ClaimPredicateTypeClaimPredicateUnconditional,
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		s.T().Run(tc.desc, func(t *testing.T) {
+			operation := transactionOperationWrapper{
+				index:          0,
+				transaction:    io.LedgerTransaction{},
+				operation:      tc.op,
+				ledgerSequence: 1,
+			}
+
+			s.Assert().Equal(tc.expected, operation.Details())
+		})
+	}
+}
+
+func TestCreateClaimableBalanceOpTestSuite(t *testing.T) {
+	suite.Run(t, new(CreateClaimableBalanceOpTestSuite))
 }

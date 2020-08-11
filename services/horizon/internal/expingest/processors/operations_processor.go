@@ -283,8 +283,20 @@ func (operation *transactionOperationWrapper) Details() map[string]interface{} {
 	case xdr.OperationTypeBumpSequence:
 		op := operation.operation.Body.MustBumpSequenceOp()
 		details["bump_to"] = fmt.Sprintf("%d", op.BumpTo)
-	case xdr.OperationTypeCreateClaimableBalance,
-		xdr.OperationTypeClaimClaimableBalance,
+	case xdr.OperationTypeCreateClaimableBalance:
+		op := operation.operation.Body.MustCreateClaimableBalanceOp()
+		details["asset"] = op.Asset.StringCanonical()
+		details["amount"] = amount.String(op.Amount)
+		var claimants history.Claimants
+		for _, c := range op.Claimants {
+			cv0 := c.MustV0()
+			claimants = append(claimants, history.Claimant{
+				Destination: cv0.Destination.Address(),
+				Predicate:   cv0.Predicate,
+			})
+		}
+		details["claimants"] = claimants
+	case xdr.OperationTypeClaimClaimableBalance,
 		xdr.OperationTypeBeginSponsoringFutureReserves,
 		xdr.OperationTypeEndSponsoringFutureReserves,
 		xdr.OperationTypeRevokeSponsorship:
