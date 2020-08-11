@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/stellar/go/xdr"
 	. "github.com/stellar/go/xdr"
 )
 
@@ -105,33 +106,16 @@ var _ = Describe("xdr.Asset#String()", func() {
 })
 
 var _ = Describe("xdr.Asset#StringCanonical()", func() {
-	var asset Asset
-
 	Context("asset is native", func() {
-		BeforeEach(func() {
-			var err error
-			asset, err = NewAsset(AssetTypeAssetTypeNative, nil)
-			Expect(err).To(BeNil())
-		})
-
 		It("returns 'native'", func() {
+			asset := xdr.MustNewNativeAsset()
 			Expect(asset.StringCanonical()).To(Equal("native"))
 		})
 	})
 
-	Context("asset is credit_alphanum4", func() {
-		BeforeEach(func() {
-			var err error
-			an := AssetAlphaNum4{}
-			err = an.Issuer.SetAddress("GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H")
-			Expect(err).To(BeNil())
-			copy(an.AssetCode[:], []byte("USD"))
-
-			asset, err = NewAsset(AssetTypeAssetTypeCreditAlphanum4, an)
-			Expect(err).To(BeNil())
-		})
-
-		It("returns 'type/code/issuer'", func() {
+	Context("asset is issued", func() {
+		It("returns 'code:issuer'", func() {
+			asset := xdr.MustNewCreditAsset("USD", "GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H")
 			Expect(asset.StringCanonical()).To(Equal("USD:GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H"))
 		})
 	})
